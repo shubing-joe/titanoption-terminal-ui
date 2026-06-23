@@ -8,6 +8,7 @@ import { OptionLeg, RustPositionAnalysisResponse, RustStrategySurfaceResponse } 
 import { formatAxisDate, formatShortAxisDate, resolveScenarioDaysDomain } from '../lib/chartScales.ts';
 import { analyzeStrategy } from '../lib/optionsMath';
 import { summarizeThreeDBoundaries, threeDComputeEngineMeta } from '../lib/optionAnalytics';
+import { readJsonResponse } from '../lib/readJsonResponse';
 import { RotateCw, RefreshCw, Activity, Eye, EyeOff } from 'lucide-react';
 
 interface ThreeDChartProps {
@@ -108,7 +109,7 @@ export default function ThreeDChart({ legs, currentStockPrice, daysToExpiry, asO
             legs,
           }),
         });
-        const payload = await response.json();
+        const payload = await readJsonResponse(response, 'option-core surface');
         if (!response.ok || payload.ok === false) {
           throw new Error(payload.error || 'rust option-core surface failed');
         }

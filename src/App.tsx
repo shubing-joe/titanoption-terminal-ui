@@ -30,6 +30,7 @@ import {
 import { resolveValidationChain } from './lib/validationReport';
 import { terminalHeaderStatus } from './lib/terminalHeader';
 import { loadStoredWatchlist, saveMergedStoredWatchlist, saveStoredWatchlist } from './lib/watchlistStorage';
+import { readJsonResponse } from './lib/readJsonResponse';
 import {
   DEFAULT_WORKSPACE_PANEL_HEIGHTS,
   DEFAULT_WORKSPACE_PANEL_VISIBILITY,
@@ -315,7 +316,7 @@ export default function App() {
     setIsLiveLoading(true);
     try {
       const response = await fetch(buildLiveMarketUrl(symbol, params));
-      const payload = await response.json();
+      const payload = await readJsonResponse(response, 'live market data');
       if (!response.ok || payload.ok === false) {
         throw new Error(payload.error || 'live market data failed');
       }
@@ -391,7 +392,7 @@ export default function App() {
     if (symbols.length === 0) return;
     try {
       const response = await fetch(`/api/market/watchlist-summary?symbols=${encodeURIComponent(symbols.join(','))}`);
-      const payload = await response.json();
+      const payload = await readJsonResponse(response, 'watchlist summary');
       if (!response.ok || payload.ok === false || !Array.isArray(payload.tickers)) {
         throw new Error(payload.error || 'watchlist summary failed');
       }
@@ -423,7 +424,7 @@ export default function App() {
     setIsValidationReplayLoading(true);
     try {
       const response = await fetch('/api/market/validation/replay');
-      const payload = await response.json();
+      const payload = await readJsonResponse(response, 'validation replay');
       if (!response.ok || payload.ok === false) {
         throw new Error(payload.error || 'validation replay failed');
       }
@@ -460,7 +461,7 @@ export default function App() {
           legs,
         }),
       });
-      const payload = await response.json();
+      const payload = await readJsonResponse(response, 'option-core analysis');
       if (!response.ok || payload.ok === false) {
         throw new Error(payload.error || 'rust option-core analysis failed');
       }
