@@ -3,6 +3,7 @@ import { Activity, AlertCircle, Award, ChevronDown, Compass, Minus, Plus, Target
 
 import type { OptionQuoteTicket } from '../lib/optionQuoteTicket';
 import { formatScaledNumber, type ScaleMode } from '../lib/optionAnalytics';
+import { buildDepthBookLevels, DEPTH_BOOK_TICK_SIZES, type DepthBookTickSize } from '../lib/depthBook';
 import {
   buildOptionOrderDraft,
   defaultOrderDraftConfig,
@@ -16,6 +17,7 @@ interface OptionQuoteWorkbenchProps {
   quoteTicket: OptionQuoteTicket | null;
   activeSymbol: string;
   scaleMode: ScaleMode;
+  initialSide?: OptionOrderDraftConfig['side'];
 }
 
 function formatPrice(value: number | null | undefined): string {
@@ -48,34 +50,24 @@ function anchorLabel(anchor: OrderPriceAnchor): string {
 
 const PRICE_ANCHORS: OrderPriceAnchor[] = ['bid', 'mid', 'ask', 'patient', 'fair', 'aggressive', 'manual'];
 
-function depthLevels(ticket: OptionQuoteTicket | null) {
-  if (!ticket) return [];
-  const step = Math.max(0.01, ticket.spread / 4 || 0.01);
-  const totalOi = Math.max(1, ticket.distribution.totalOpenInterest);
-  const baseSize = Math.max(1, Math.round(totalOi / 1_000));
-  const bidPrice = (offset: number) => Math.max(0, ticket.bid - step * offset);
-  return [
-    { side: 'ask', label: 'ASK 5', price: ticket.ask + step * 4, size: Math.max(1, Math.round(baseSize * 0.42)), pct: 42 },
-    { side: 'ask', label: 'ASK 4', price: ticket.ask + step * 3, size: Math.max(1, Math.round(baseSize * 0.55)), pct: 55 },
-    { side: 'ask', label: 'ASK 3', price: ticket.ask + step * 2, size: Math.max(1, Math.round(baseSize * 0.67)), pct: 67 },
-    { side: 'ask', label: 'ASK 2', price: ticket.ask + step, size: Math.max(1, Math.round(baseSize * 0.79)), pct: 79 },
-    { side: 'ask', label: 'ASK 1', price: ticket.ask, size: Math.max(1, Math.round(baseSize * 0.92)), pct: 92 },
-    { side: 'bid', label: 'BID 1', price: bidPrice(0), size: Math.max(1, Math.round(baseSize * 0.88)), pct: 88 },
-    { side: 'bid', label: 'BID 2', price: bidPrice(1), size: Math.max(1, Math.round(baseSize * 0.74)), pct: 74 },
-    { side: 'bid', label: 'BID 3', price: bidPrice(2), size: Math.max(1, Math.round(baseSize * 0.61)), pct: 61 },
-    { side: 'bid', label: 'BID 4', price: bidPrice(3), size: Math.max(1, Math.round(baseSize * 0.48)), pct: 48 },
-    { side: 'bid', label: 'BID 5', price: bidPrice(4), size: Math.max(1, Math.round(baseSize * 0.36)), pct: 36 },
-  ];
-}
-
 export default function OptionQuoteWorkbench({
   quoteTicket,
   activeSymbol,
   scaleMode,
+  initialSide,
 }: OptionQuoteWorkbenchProps) {
-  const [draftConfig, setDraftConfig] = useState<OptionOrderDraftConfig>(() => defaultOrderDraftConfig(quoteTicket));
+  const [draftConfig, setDraftConfig] = useState<OptionOrderDraftConfig>(() => {
+    const nextConfig = defaultOrderDraftConfig(quoteTicket);
+    if (!initialSide) return nextConfig;
+    return {
+      ...nextConfig,
+      side: initialSide,
+      anchor: initialSide === 'buy' ? 'ask' : 'bid',
+    };
+  });
   const [premiumInput, setPremiumInput] = useState('');
-  const levels = depthLevels(quoteTicket);
+  const [depthTickSize, setDepthTickSize] = useState<DepthBookTickSize>(0.01);
+  const levels = useMemo(() => buildDepthBookLevels(quoteTicket, depthTickSize), [depthTickSize, quoteTicket]);
   const topDistributionRows = quoteTicket?.distribution.strikes.slice(0, 7) ?? [];
   const selectedRow = quoteTicket?.distribution.strikes.find((item) => item.strike === quoteTicket.strike);
   const callOi = selectedRow?.callOpenInterest ?? 0;
@@ -89,18 +81,45 @@ export default function OptionQuoteWorkbench({
   const contractKey = orderDraftContractKey(quoteTicket);
 
   useEffect(() => {
-    const nextConfig = defaultOrderDraftConfig(quoteTicket);
+    const baseConfig = defaultOrderDraftConfig(quoteTicket);
+    const nextConfig = initialSide
+      ? {
+        ...baseConfig,
+        side: initialSide,
+        anchor: initialSide === 'buy' ? 'ask' as const : 'bid' as const,
+      }
+      : baseConfig;
     setDraftConfig(nextConfig);
-    const nextPremium = premiumForAnchor(quoteTicket, nextConfig.anchor, null);
+    const nextPremium = premiumForAnchor(quoteTicket, nextConfig.anchor, null, nextConfig.side);
     setPremiumInput(nextPremium == null ? '' : nextPremium.toFixed(2));
-  }, [contractKey]);
+  }, [contractKey, initialSide, quoteTicket]);
 
   const draft = useMemo(() => buildOptionOrderDraft(quoteTicket, draftConfig), [draftConfig, quoteTicket]);
-  const selectedAnchorPremium = premiumForAnchor(quoteTicket, draftConfig.anchor, draftConfig.manualPremium);
+  const selectedAnchorPremium = premiumForAnchor(quoteTicket, draftConfig.anchor, draftConfig.manualPremium, draftConfig.side);
+  const limitSuggestions = useMemo(() => ([
+    {
+      anchor: 'patient' as const,
+      label: 'PATIENT',
+      value: premiumForAnchor(quoteTicket, 'patient', null, draftConfig.side),
+      hint: draftConfig.side === 'buy' ? '低价等成交' : '高价挂卖',
+    },
+    {
+      anchor: 'fair' as const,
+      label: 'FAIR',
+      value: premiumForAnchor(quoteTicket, 'fair', null, draftConfig.side),
+      hint: '中间价',
+    },
+    {
+      anchor: 'aggressive' as const,
+      label: 'AGGR',
+      value: premiumForAnchor(quoteTicket, 'aggressive', null, draftConfig.side),
+      hint: draftConfig.side === 'buy' ? '打 Ask 更快' : '打 Bid 更快',
+    },
+  ]), [draftConfig.side, quoteTicket]);
 
   const setAnchor = (anchor: OrderPriceAnchor) => {
     setDraftConfig((current) => {
-      const premium = premiumForAnchor(quoteTicket, anchor, current.manualPremium);
+      const premium = premiumForAnchor(quoteTicket, anchor, current.manualPremium, current.side);
       if (anchor !== 'manual') {
         setPremiumInput(premium == null ? '' : premium.toFixed(2));
       }
@@ -114,7 +133,7 @@ export default function OptionQuoteWorkbench({
 
   const setSide = (side: OptionOrderDraftConfig['side']) => {
     const anchor = side === 'buy' ? 'ask' : 'bid';
-    const premium = premiumForAnchor(quoteTicket, anchor, null);
+    const premium = premiumForAnchor(quoteTicket, anchor, null, side);
     setPremiumInput(premium == null ? '' : premium.toFixed(2));
     setDraftConfig((current) => ({
       ...current,
@@ -242,17 +261,13 @@ export default function OptionQuoteWorkbench({
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          {[
-            ['PATIENT', quoteTicket?.limitLadder.patient, '省滑点'],
-            ['FAIR', quoteTicket?.limitLadder.fair, '中间价'],
-            ['AGGR', quoteTicket?.limitLadder.aggressive, '更快成交'],
-          ].map(([label, value, hint]) => (
+          {limitSuggestions.map(({ anchor, label, value, hint }) => (
             <button
               type="button"
-              key={String(label)}
+              key={anchor}
               disabled={!quoteTicket}
-              onClick={() => setAnchor(String(label).toLowerCase() as OrderPriceAnchor)}
-              className={`bg-zinc-950/50 rounded-lg p-2 border text-center disabled:cursor-not-allowed ${draftConfig.anchor === String(label).toLowerCase() ? 'border-emerald-500/50' : 'border-zinc-800 hover:border-zinc-700'}`}
+              onClick={() => setAnchor(anchor)}
+              className={`bg-zinc-950/50 rounded-lg p-2 border text-center disabled:cursor-not-allowed ${draftConfig.anchor === anchor ? 'border-emerald-500/50' : 'border-zinc-800 hover:border-zinc-700'}`}
             >
               <div className="text-[9px] text-zinc-500 font-black">{label}</div>
               <div className="text-sm font-black text-cyan-200">{typeof value === 'number' ? formatPrice(value) : '--'}</div>
@@ -334,9 +349,21 @@ export default function OptionQuoteWorkbench({
               五档深度报价 (5-Level Depth)
             </span>
           </div>
-          <span className="text-[10px] text-zinc-500">
-            REAL BBO DERIVED
-          </span>
+          <label className="flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1 text-[10px] font-bold text-zinc-500">
+            <span>刻度</span>
+            <select
+              value={depthTickSize}
+              onChange={(event) => setDepthTickSize(Number(event.target.value) as DepthBookTickSize)}
+              className="bg-zinc-950 text-zinc-200 focus:outline-none"
+              aria-label="盘口价格刻度"
+            >
+              {DEPTH_BOOK_TICK_SIZES.map((tick) => (
+                <option key={tick} value={tick}>
+                  {tick.toFixed(tick < 0.1 ? 2 : 1)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="bg-zinc-950/60 rounded-lg p-2 flex justify-between items-center border border-zinc-800">
@@ -357,7 +384,7 @@ export default function OptionQuoteWorkbench({
         <div className="flex flex-col font-mono text-xs flex-1 justify-center min-h-[220px]">
           <div className="flex justify-between text-[10px] text-zinc-500 font-medium pb-1.5 font-sans">
             <span>价格 (USD)</span>
-            <span>真实 OI 派生张数</span>
+            <span>BBO + OI 派生深度</span>
           </div>
 
           <div className="flex flex-col gap-[3px] py-1 border-b border-zinc-900">

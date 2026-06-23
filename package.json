@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "lint": "tsc --noEmit",
-    "test": "tsx src/publicBoundary/publicBoundary.test.ts && tsx src/mocks/mockApi.test.ts && tsx src/lib/readJsonResponse.test.ts && tsx src/lib/liveRequest.test.ts && tsx src/lib/optionChainRows.test.ts && tsx src/lib/optionQuoteTicket.test.ts && tsx src/lib/optionOrderDraft.test.ts && tsx src/components/OptionQuoteWorkbench.test.tsx && tsx src/components/OptionsChainPanel.test.tsx && tsx src/components/VolatilityOddsPanel.test.tsx && tsx src/components/VolatilityMonitor.test.tsx && tsx src/components/QuantFlowRadar.test.tsx",
+    "test": "tsx src/publicBoundary/publicBoundary.test.ts && tsx src/mocks/mockApi.test.ts && tsx src/lib/readJsonResponse.test.ts && tsx src/lib/liveRequest.test.ts && tsx src/lib/optionChainRows.test.ts && tsx src/lib/optionQuoteTicket.test.ts && tsx src/lib/optionOrderDraft.test.ts && tsx src/lib/depthBook.test.ts && tsx src/components/OptionQuoteWorkbench.test.tsx && tsx src/components/OptionsChainPanel.test.tsx && tsx src/components/VolatilityOddsPanel.test.tsx && tsx src/components/VolatilityMonitor.test.tsx && tsx src/components/QuantFlowRadar.test.tsx",
     "test:build-paths": "tsx src/publicBoundary/staticBuildPaths.test.ts"
   },
   "dependencies": {

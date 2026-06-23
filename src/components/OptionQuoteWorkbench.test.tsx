@@ -30,7 +30,7 @@ function row(
     theta: -0.19,
     vega: 0.34,
     quoteTimestamp: 1782159299925625600,
-    source: 'public_mock_options_snapshot',
+    source: 'public_options_snapshot',
     quoteTradable: true,
   };
 }
@@ -64,10 +64,11 @@ const html = renderToStaticMarkup(
 assert.match(html, /MRVL 2026-06-26 300C/);
 assert.match(html, /五档深度报价 \(5-Level Depth\)/);
 assert.match(html, /Option Premium Price/);
-assert.match(html, /选择定价锚点/);
-assert.match(html, /Prepared Notional/);
 assert.match(html, /BBO/);
-assert.match(html, /REAL BBO DERIVED/);
+assert.match(html, /刻度/);
+assert.match(html, /0\.01/);
+assert.match(html, /0\.05/);
+assert.match(html, /BBO \+ OI 派生深度/);
 assert.match(html, /Options Greeks/);
 assert.match(html, /Option Chips Heatmap/);
 assert.match(html, /Watch Only · No Broker Submit/);
@@ -80,7 +81,38 @@ assert.match(html, /0\.5200/);
 assert.match(html, /不生成模拟盘口/);
 assert.doesNotMatch(html, /STRICT VALIDATION GATE/);
 assert.doesNotMatch(html, /broker-final/i);
+assert.doesNotMatch(html, /simulated buyer momentum/i);
 assert.doesNotMatch(html, /Math\.sin/);
 assert.doesNotMatch(html, /Math\.cos/);
+
+const sellTicketWithBuyView = buildOptionQuoteTicket({
+  chain,
+  selected: {
+    ...chain[0],
+    bid: 4.92,
+    ask: 5.36,
+    mark: 5.14,
+  },
+  side: 'sell',
+  quantity: 1,
+  selectedLegRefreshSeconds: 1,
+  nowMs: 1782159300925,
+});
+
+const buyViewHtml = renderToStaticMarkup(
+  <OptionQuoteWorkbench
+    quoteTicket={sellTicketWithBuyView}
+    activeSymbol="MRVL"
+    scaleMode="unit"
+    initialSide="buy"
+  />,
+);
+
+assert.match(buyViewHtml, /BUY \/ 买入开仓/);
+assert.match(buyViewHtml, /\$5\.03/);
+assert.match(buyViewHtml, /\$5\.14/);
+assert.match(buyViewHtml, /\$5\.36/);
+assert.doesNotMatch(buyViewHtml, /\$5\.25/);
+assert.match(buyViewHtml, /准备单：BUY 1x @ \$5\.36/);
 
 console.log('OptionQuoteWorkbench render tests passed');

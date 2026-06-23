@@ -28,6 +28,18 @@ function finitePositive(value: unknown): number | null {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
+function sideAwareLimitPremium(ticket: OptionQuoteTicket, side: QuoteTicketSide, anchor: OrderPriceAnchor): number | null {
+  if (anchor === 'fair') return ticket.mid;
+  if (side === 'buy') {
+    if (anchor === 'patient') return round2((ticket.bid + ticket.mid) / 2);
+    if (anchor === 'aggressive') return ticket.ask;
+    return null;
+  }
+  if (anchor === 'patient') return round2((ticket.mid + ticket.ask) / 2);
+  if (anchor === 'aggressive') return ticket.bid;
+  return null;
+}
+
 export function defaultOrderDraftConfig(ticket: OptionQuoteTicket | null): OptionOrderDraftConfig {
   return {
     side: ticket?.side ?? 'buy',
@@ -51,12 +63,13 @@ export function premiumForAnchor(
   ticket: OptionQuoteTicket | null,
   anchor: OrderPriceAnchor,
   manualPremium?: number | null,
+  side?: QuoteTicketSide,
 ): number | null {
   if (!ticket) return null;
   if (anchor === 'manual') return finitePositive(manualPremium);
-  if (anchor === 'patient') return ticket.limitLadder.patient;
-  if (anchor === 'fair') return ticket.limitLadder.fair;
-  if (anchor === 'aggressive') return ticket.limitLadder.aggressive;
+  if (anchor === 'patient' || anchor === 'fair' || anchor === 'aggressive') {
+    return sideAwareLimitPremium(ticket, side ?? ticket.side, anchor);
+  }
   if (anchor === 'bid') return ticket.bid;
   if (anchor === 'mid') return ticket.mid;
   return ticket.ask;
@@ -67,7 +80,7 @@ export function buildOptionOrderDraft(
   config: OptionOrderDraftConfig,
 ): OptionOrderDraft {
   const quantity = Math.max(1, Math.floor(Number(config.quantity) || 1));
-  const premium = premiumForAnchor(ticket, config.anchor, config.manualPremium);
+  const premium = premiumForAnchor(ticket, config.anchor, config.manualPremium, config.side);
   const notional = premium == null ? null : round2(premium * quantity * 100);
   const slippageFromMid = ticket && premium != null ? round2(premium - ticket.mid) : null;
   const slippagePctFromMid = ticket && premium != null && ticket.mid > 0

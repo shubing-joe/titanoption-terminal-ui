@@ -83,4 +83,49 @@ assert.equal(manualDraft.notional, 1010);
 assert.equal(manualDraft.slippageFromMid, -0.13);
 assert.equal(manualDraft.slippagePctFromMid, -2.51);
 
+const sellSelectedTicket: OptionQuoteTicket = {
+  ...ticket,
+  side: 'sell',
+  bid: 4.92,
+  ask: 5.36,
+  mid: 5.14,
+  mark: 5.14,
+  limitLadder: {
+    patient: 5.25,
+    fair: 5.14,
+    aggressive: 4.92,
+  },
+};
+
+const buyAggressiveFromSellTicket = buildOptionOrderDraft(sellSelectedTicket, {
+  side: 'buy',
+  anchor: 'aggressive',
+  quantity: 1,
+  manualPremium: null,
+});
+
+assert.equal(buyAggressiveFromSellTicket.premium, 5.36);
+assert.equal(buyAggressiveFromSellTicket.notional, 536);
+assert.equal(buyAggressiveFromSellTicket.slippageFromMid, 0.22);
+
+const buyPatientFromSellTicket = buildOptionOrderDraft(sellSelectedTicket, {
+  side: 'buy',
+  anchor: 'patient',
+  quantity: 1,
+  manualPremium: null,
+});
+
+assert.equal(buyPatientFromSellTicket.premium, 5.03);
+assert.equal(buyPatientFromSellTicket.slippageFromMid, -0.11);
+
+const sellPatientFromSellTicket = buildOptionOrderDraft(sellSelectedTicket, {
+  side: 'sell',
+  anchor: 'patient',
+  quantity: 1,
+  manualPremium: null,
+});
+
+assert.equal(sellPatientFromSellTicket.premium, 5.25);
+assert.equal(sellPatientFromSellTicket.slippageFromMid, 0.11);
+
 console.log('optionOrderDraft helpers passed');
