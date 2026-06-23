@@ -8,13 +8,15 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "lint": "tsc --noEmit",
-    "test": "tsx src/lib/quoteTicket.test.ts"
+    "test": "tsx src/publicBoundary/publicBoundary.test.ts && tsx src/mocks/mockApi.test.ts && tsx src/lib/liveRequest.test.ts && tsx src/lib/validationReport.test.ts && tsx src/lib/optionChainRows.test.ts && tsx src/lib/optionQuoteTicket.test.ts && tsx src/components/OptionsChainPanel.test.tsx && tsx src/components/VolatilityOddsPanel.test.tsx && tsx src/components/VolatilityMonitor.test.tsx && tsx src/components/QuantFlowRadar.test.tsx"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "lucide-react": "^0.546.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
+    "tailwindcss": "^4.1.14",
     "vite": "^6.2.3"
   },
   "devDependencies": {

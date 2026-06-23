@@ -1,38 +1,34 @@
-# TitanOption Terminal UI Sandbox
+# TitanOption Terminal UI
 
-Public, sanitized frontend sandbox for collaborating on option terminal UI.
+Sanitized frontend-only copy of the TitanOption terminal.
 
-This repository is **not** the private trading system. It contains mock data,
-generic option-chain view models, and UI components that can be reviewed through
-pull requests before selected changes are ported back into the private product.
+It mirrors the current terminal shell, workspace layout, option-chain panel,
+2D/3D views, volatility panels, quant radar, report view, and paper-simulation
+UI. It uses a fresh mock market snapshot in the browser so the terminal can be
+run and reviewed locally without the private backend.
 
-## Scope
+## Public Boundary
 
 Included:
 
-- React/Vite frontend shell
-- Mock option chain data
-- Generic quote ticket UI
-- Generic volatility workbench UI
-- TypeScript helper tests
-- GitHub Actions CI
+- Current React/Vite terminal frontend structure
+- Shared UI components and workspace layout
+- Browser-only mock API for `/api/market/*` and `/api/option-core/*`
+- Current-market-style mock option chain, mock vol surface, mock option-core responses
+- Focused tests and GitHub Actions CI
 
-Not included:
+Excluded:
 
-- API keys or `.env`
-- Real market data provider configuration
-- Private strategy rules
-- Ranking or trade-decision logic
-- Real order submission
-- Portfolio, trade history, or personal watchlists
-- Backend/Rust/Python trading engines
+- `.env`, API keys, tokens, provider URLs
+- Real backend server, Python bridge, cache DBs, generated `dist`
+- Private strategy composer module (#6)
+- Private daily queue / closed-loop decision module (#7)
+- AI strategy advisor / private decision assistant
+- Real market-data configuration
+- Real order submission or broker routing
+- Personal watchlists, trade history, ranking rules, or owner-specific logic
 
-Every screen must treat the data as mock/demo state and keep the visible
-disclaimer:
-
-```text
-MOCK DATA - NOT FOR TRADING
-```
+All public API responses come from `src/mocks/mockApi.ts`.
 
 ## Local Setup
 
@@ -57,28 +53,21 @@ npm run lint
 npm run build
 ```
 
-## First Contribution Area
+## Development Targets
 
-Recommended first PR:
+Good first PRs:
 
-- Improve `VolatilityWorkbench` layout and empty/fallback states.
-- Improve `QuoteTicketPanel` information density.
-- Improve mobile/tablet responsiveness.
-- Keep the mock/non-trading disclaimer visible.
+- Improve panel layout, spacing, density, and responsive behavior.
+- Improve option-chain table ergonomics and quote-ticket display.
+- Improve loading, empty, fallback, and mock-data states.
+- Extract shared UI components when it makes the copied frontend easier to maintain.
+- Add focused tests for UI helpers and public mock states.
 
-Do not add real API calls, secrets, broker integration, or financial formulas
-that imply executable trading authority.
+Do not add real API calls, secrets, provider-specific credentials, broker
+integration, trading formulas that imply execution authority, or private
+decision workflow logic.
 
-## Relationship To Private Repo
+## Working Model
 
-The private Market Playbook OS / TitanOption repo remains authoritative for:
-
-- backend contracts
-- live market adapters
-- option pricing/Greeks engines
-- strategy ranking
-- execution gates
-- owner-specific trade logic
-
-This public repo is a frontend collaboration surface only. Useful PRs may be
-ported back into the private repo after review.
+Develop and review frontend changes here first. Accepted changes can be
+manually ported back into the private TitanOption repo.

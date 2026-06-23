@@ -1,6 +1,6 @@
 # Contributing
 
-This repo is a UI sandbox. Contributions should improve generic frontend
+This repo is a sanitized frontend copy. Changes should improve terminal UI
 quality without exposing private trading logic.
 
 ## Branches
@@ -21,6 +21,7 @@ Open a pull request into `main`.
 - [ ] Screenshots or short screen recording attached for visual changes
 - [ ] No `.env`, API key, token, cache DB, or generated `dist`
 - [ ] No real provider URL, broker integration, or live order submission
+- [ ] No private #6 strategy composer or #7 daily queue logic
 - [ ] Mock-data disclaimer remains visible
 
 ## Allowed Work
@@ -31,6 +32,7 @@ Open a pull request into `main`.
 - Accessibility improvements
 - Mock-data display states
 - Generic view-model helpers with tests
+- Browser-only mock API states in `src/mocks/`
 
 ## Ask Before Changing
 
@@ -41,9 +43,10 @@ Ask before adding:
 - broker/order routing
 - pricing/Greeks formulas
 - ranking/verdict logic
+- private #6/#7 workflow modules
 - new large dependencies
 
 ## Data Boundary
 
-All data in this repo must be static mock data. If a UI needs a new state,
-add a fixture in `src/fixtures/` and label it as mock.
+All data in this repo must come from static/browser mock data. If a UI needs a
+new state, add it to `src/mocks/` or a clearly labeled fixture and keep it mock.
