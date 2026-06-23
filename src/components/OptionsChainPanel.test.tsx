@@ -43,10 +43,18 @@ const html = renderToStaticMarkup(
 
 assert.match(html, /2028\.01\.21 \(578天\)/);
 assert.match(html, /OPTION QUOTE TICKET/);
-assert.match(html, /LIQUIDITY \/ 筹码分布/);
-assert.match(html, /不生成额外模拟盘口/);
+assert.match(html, /五档深度报价 \(5-Level Depth\)/);
+assert.match(html, /Option Premium Price/);
+assert.match(html, /选择定价锚点/);
+assert.match(html, /Prepared Notional/);
+assert.match(html, /Options Greeks/);
+assert.match(html, /Option Chips Heatmap/);
+assert.match(html, /不生成模拟盘口/);
 assert.match(html, /\$12\.50/);
 assert.match(html, /72\.0%/);
 assert.match(html, /cursor-not-allowed/);
+assert.doesNotMatch(html, /STRICT VALIDATION GATE/);
+assert.doesNotMatch(html, /broker-final/i);
+assert.doesNotMatch(html, /Math\.sin/);
 
 console.log('OptionsChainPanel render tests passed');

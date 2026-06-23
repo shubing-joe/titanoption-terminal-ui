@@ -11,6 +11,7 @@ import { buildExpiryFamilies, buildExpiryPager, ExpiryFamilyId, formatScaledNumb
 import { resolveOptionChainAvailability } from '../lib/optionChainAvailability';
 import { buildOptionChainSide } from '../lib/optionChainRows';
 import { buildOptionQuoteTicket, QuoteTicketSide } from '../lib/optionQuoteTicket';
+import OptionQuoteWorkbench from './OptionQuoteWorkbench';
 import {
   Plus, Edit2, TrendingUp, TrendingDown, Eye, Filter, Check,
   HelpCircle, Settings, ChevronDown, ChevronLeft, ChevronRight, ChevronsRight, Sparkles, RefreshCw, Layers, CheckSquare, Square
@@ -296,8 +297,6 @@ export default function OptionsChainPanel({
     quantity: selectedQuote?.quantity ?? 1,
     selectedLegRefreshSeconds: DEFAULT_SELECTED_LEG_REFRESH_SECONDS,
   }), [liveRowsForExpiry, selectedQuote]);
-
-  const topDistributionRows = quoteTicket?.distribution.strikes.slice(0, 5) ?? [];
 
   useEffect(() => {
     const container = tableScrollRef.current;
@@ -630,144 +629,11 @@ export default function OptionsChainPanel({
         </div>
       </div>
 
-      {/* OPTION-NATIVE QUOTE TICKET */}
-      <div className="mb-4 border border-cyan-500/25 bg-[#05070a] font-mono">
-        <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr_1.2fr] gap-0">
-          <div className="border-b xl:border-b-0 xl:border-r border-cyan-500/15 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-[10px] text-cyan-300 font-black tracking-widest uppercase">
-                  OPTION QUOTE TICKET · 选中合约报价单
-                </div>
-                <div className="mt-1 text-sm font-black text-white">
-                  {quoteTicket ? (
-                    <>
-                      {activeSymbol} {quoteTicket.expiry} {quoteTicket.strike}{quoteTicket.type === 'call' ? 'C' : 'P'}
-                    </>
-                  ) : (
-                    '点击期权链 BID/ASK 选择合约'
-                  )}
-                </div>
-              </div>
-              <div className={`px-2.5 py-1 border text-[10px] font-black ${
-                quoteTicket?.verdict === 'executable'
-                  ? 'text-emerald-300 border-emerald-400/50 bg-emerald-950/25'
-                  : quoteTicket?.verdict === 'watch_only'
-                    ? 'text-amber-300 border-amber-400/50 bg-amber-950/25'
-                    : 'text-gray-400 border-gray-700 bg-black'
-              }`}>
-                {quoteTicket ? quoteTicket.verdict.toUpperCase() : 'NO CONTRACT'}
-              </div>
-            </div>
-
-            {quoteTicket ? (
-              <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-                <div className="bg-black border border-gray-850 p-2">
-                  <div className="text-gray-500 font-black uppercase">方向</div>
-                  <div className={quoteTicket.side === 'buy' ? 'text-cyan-300 text-lg font-black' : 'text-rose-300 text-lg font-black'}>
-                    {quoteTicket.side === 'buy' ? 'BUY / 买入开仓' : 'SELL / 卖出开仓'}
-                  </div>
-                </div>
-                <div className="bg-black border border-gray-850 p-2">
-                  <div className="text-gray-500 font-black uppercase">刷新/新鲜度</div>
-                  <div className={quoteTicket.freshness.status === 'live' ? 'text-emerald-300 font-black' : 'text-amber-300 font-black'}>
-                    {quoteTicket.freshness.status.toUpperCase()} · {quoteTicket.freshness.ageSeconds == null ? 'no ts' : `${quoteTicket.freshness.ageSeconds}s`}
-                  </div>
-                </div>
-                <div className="col-span-2 text-[10px] text-gray-500 truncate" title={quoteTicket.contractTicker}>
-                  {quoteTicket.contractTicker || 'contract ticker unavailable'}
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3 border border-dashed border-gray-800 bg-black/60 p-3 text-[11px] text-gray-500">
-                当前面板只显示公开 mock 链行，不生成额外模拟盘口。点击可用合约的 BID/ASK 后，这里会显示 BBO、限价阶梯和流动性分布。
-              </div>
-            )}
-          </div>
-
-          <div className="border-b xl:border-b-0 xl:border-r border-cyan-500/15 p-3">
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: 'BID', value: quoteTicket?.bid, tone: 'text-emerald-300' },
-                { label: 'MID', value: quoteTicket?.mid, tone: 'text-yellow-300' },
-                { label: 'ASK', value: quoteTicket?.ask, tone: 'text-rose-300' },
-              ].map((item) => (
-                <div key={item.label} className="bg-black border border-gray-850 p-2 text-center">
-                  <div className="text-[9px] text-gray-500 font-black">{item.label}</div>
-                  <div className={`text-lg font-black ${item.tone}`}>
-                    {item.value == null ? '--' : `$${item.value.toFixed(2)}`}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 bg-black border border-gray-850 p-2">
-              <div className="flex items-center justify-between text-[10px]">
-                <span className="text-gray-500 font-black">SPREAD / 成交摩擦</span>
-                <span className={quoteTicket && quoteTicket.spreadPct <= 8 ? 'text-emerald-300 font-black' : 'text-amber-300 font-black'}>
-                  {quoteTicket ? `$${quoteTicket.spread.toFixed(2)} · ${quoteTicket.spreadPct.toFixed(2)}%` : '--'}
-                </span>
-              </div>
-              <div className="mt-2 h-2 bg-gray-900">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-rose-400"
-                  style={{ width: `${quoteTicket ? Math.min(100, Math.max(6, quoteTicket.spreadPct * 7)) : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[10px]">
-              {[
-                ['PATIENT', quoteTicket?.limitLadder.patient, '省滑点'],
-                ['FAIR', quoteTicket?.limitLadder.fair, '中间价'],
-                ['AGGR', quoteTicket?.limitLadder.aggressive, '更快成交'],
-              ].map(([label, value, hint]) => (
-                <div key={label} className="bg-black border border-gray-850 p-2">
-                  <div className="text-gray-500 font-black">{label}</div>
-                  <div className="text-cyan-200 font-black text-sm">{typeof value === 'number' ? `$${value.toFixed(2)}` : '--'}</div>
-                  <div className="text-[8.5px] text-gray-600">{hint}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-3">
-            <div className="flex items-center justify-between">
-              <div className="text-[10px] text-[#ff9f1c] font-black tracking-widest uppercase">
-                LIQUIDITY / 筹码分布
-              </div>
-              <div className="text-[9px] text-gray-500">
-                {quoteTicket ? `VOL ${formatScaledNumber(quoteTicket.distribution.totalVolume, scaleMode)} · OI ${formatScaledNumber(quoteTicket.distribution.totalOpenInterest, scaleMode)}` : '等待合约'}
-              </div>
-            </div>
-            <div className="mt-2 space-y-1.5">
-              {topDistributionRows.length > 0 ? topDistributionRows.map((item) => (
-                <div key={item.strike} className="grid grid-cols-[56px_1fr_44px] items-center gap-2 text-[10px]">
-                  <div className="text-gray-300 font-black">${item.strike}</div>
-                  <div className="h-3 bg-gray-900 relative overflow-hidden">
-                    <div
-                      className={item.dominantSide === 'put' ? 'h-full bg-fuchsia-500/70' : item.dominantSide === 'call' ? 'h-full bg-cyan-400/70' : 'h-full bg-gray-500/70'}
-                      style={{ width: `${Math.max(3, item.volumeSharePct)}%` }}
-                    />
-                  </div>
-                  <div className="text-right text-gray-400">{item.volumeSharePct.toFixed(1)}%</div>
-                </div>
-              )) : (
-                <div className="border border-dashed border-gray-800 bg-black p-3 text-[11px] text-gray-500">
-                  无选中合约时不显示分布，避免把模型量能误认为真实盘口。
-                </div>
-              )}
-            </div>
-            {quoteTicket?.warnings.length ? (
-              <div className="mt-2 text-[10px] text-amber-300 border border-amber-500/25 bg-amber-950/10 p-2">
-                {quoteTicket.warnings.join(' · ')}
-              </div>
-            ) : (
-              <div className="mt-2 text-[10px] text-gray-500 border border-gray-850 bg-black p-2">
-                BBO/分布来自当前公开 mock 期权链；不是多档深度盘口，也不提交真实订单。
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <OptionQuoteWorkbench
+        quoteTicket={quoteTicket}
+        activeSymbol={activeSymbol}
+        scaleMode={scaleMode}
+      />
 
       {/* OPTIONS MATRIX TABULAR BOARD */}
       {!chainAvailability.canRenderRows && (

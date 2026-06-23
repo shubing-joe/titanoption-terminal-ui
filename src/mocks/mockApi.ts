@@ -414,21 +414,6 @@ async function optionCoreSurface(request: Request): Promise<Response> {
   return responseJson(payload);
 }
 
-function validationReplay() {
-  return responseJson({
-    ok: true,
-    result: {
-      total_rows: 104,
-      accepted_rows: 104,
-      rejected_rows: 0,
-      pricing_checks: 16,
-      max_abs_diff: 0,
-      avg_abs_diff: 0,
-      warnings: ['PUBLIC_MOCK_ONLY'],
-    },
-  });
-}
-
 function watchlistSummary(url: URL) {
   const symbols = (url.searchParams.get('symbols') || 'MRVL,MU,SNDK')
     .split(',')
@@ -452,7 +437,6 @@ export async function handlePublicMockRequest(request: Request): Promise<Respons
     return responseJson(liveMarketPayload(decodeURIComponent(liveMatch[1]), url));
   }
   if (url.pathname === '/api/market/watchlist-summary') return watchlistSummary(url);
-  if (url.pathname === '/api/market/validation/replay') return validationReplay();
   if (url.pathname === '/api/option-core/analyze') return optionCoreAnalyze(request);
   if (url.pathname === '/api/option-core/surface') return optionCoreSurface(request);
   return responseJson({

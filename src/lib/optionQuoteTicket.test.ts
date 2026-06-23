@@ -22,6 +22,10 @@ function row(
     volume,
     openInterest,
     iv: 210,
+    delta: type === 'call' ? 0.52 : -0.48,
+    gamma: 0.021,
+    theta: -0.19,
+    vega: 0.34,
     quoteTimestamp: 1782159299925625600,
     source: 'public_mock_options_snapshot',
     quoteTradable: true,
@@ -60,6 +64,13 @@ assert.equal(ticket.limitLadder.fair, 26.18);
 assert.equal(ticket.limitLadder.aggressive, 27);
 assert.equal(ticket.freshness.status, 'live');
 assert.equal(ticket.verdict, 'executable');
+assert.deepEqual(ticket.greeks, {
+  delta: 0.52,
+  gamma: 0.021,
+  theta: -0.19,
+  vega: 0.34,
+  iv: 210,
+});
 assert.equal(ticket.distribution.totalVolume, 3776);
 assert.equal(ticket.distribution.totalOpenInterest, 2627);
 assert.deepEqual(

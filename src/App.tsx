@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { LiveMarketData, LiveOptionChainRow, OptionLeg, RustPositionAnalysisResponse, TickerInfo, ValidationReplayResult } from './types';
+import { LiveMarketData, LiveOptionChainRow, OptionLeg, RustPositionAnalysisResponse, TickerInfo } from './types';
 import { cdfNormal, calculateBSPrice, analyzeStrategy } from './lib/optionsMath';
 import { resolveAutoLegPremium } from './lib/livePremium';
 import { getStrategyTemplates } from './lib/strategyTemplates';
@@ -17,7 +17,6 @@ import VolatilityOddsPanel from './components/VolatilityOddsPanel';
 import OptionsChainPanel from './components/OptionsChainPanel';
 import VolatilityMonitor from './components/VolatilityMonitor';
 import QuantFlowRadar from './components/QuantFlowRadar';
-import ValidationReportPanel from './components/ValidationReportPanel';
 import { resolveDaysAfterLiveRefresh } from './lib/expiryChoices';
 import {
   buildLiveMarketUrl,
@@ -27,7 +26,6 @@ import {
   resolveExpiryWindowDays,
   selectedLiveRefreshIntervalMs,
 } from './lib/liveRequest';
-import { resolveValidationChain } from './lib/validationReport';
 import { terminalHeaderStatus } from './lib/terminalHeader';
 import { loadStoredWatchlist, saveMergedStoredWatchlist, saveStoredWatchlist } from './lib/watchlistStorage';
 import { readJsonResponse } from './lib/readJsonResponse';
@@ -202,9 +200,6 @@ export default function App() {
   const [liveRequestParams, setLiveRequestParams] = useState<LiveRequestParams>(() => buildLiveRequestParams(DEFAULT_CHAIN_VISIBLE_STRIKES, false, DEFAULT_LIVE_BUDGET_MODE));
   const [liveRefreshReason, setLiveRefreshReason] = useState<string>('initial');
   const [isWsSimulationEnabled, setIsWsSimulationEnabled] = useState<boolean>(false);
-  const [validationReplay, setValidationReplay] = useState<ValidationReplayResult | undefined>(undefined);
-  const [validationReplayError, setValidationReplayError] = useState<string | undefined>(undefined);
-  const [isValidationReplayLoading, setIsValidationReplayLoading] = useState<boolean>(false);
   const [rustPositionAnalysis, setRustPositionAnalysis] = useState<RustPositionAnalysisResponse | undefined>(undefined);
   const [isRustAnalysisLoading, setIsRustAnalysisLoading] = useState<boolean>(false);
   const [watchlistIdleRefreshSeconds, setWatchlistIdleRefreshSeconds] = useState<number>(DEFAULT_WATCHLIST_IDLE_REFRESH_SECONDS);
@@ -212,7 +207,6 @@ export default function App() {
 
   const activeTicker = tickers.find(t => t.symbol === selectedSymbol) || tickers[0];
   const liveChainRows = liveMarketData?.ok ? liveMarketData.chain || [] : [];
-  const validationChainRows = resolveValidationChain(liveMarketData);
   const liveAsOfDate = liveMarketData?.ok ? liveMarketData.asOfDate : undefined;
 
   const filteredTickers = tickers.filter(t =>
@@ -420,24 +414,6 @@ export default function App() {
     }
   };
 
-  const loadValidationReplay = async () => {
-    setIsValidationReplayLoading(true);
-    try {
-      const response = await fetch('/api/market/validation/replay');
-      const payload = await readJsonResponse(response, 'validation replay');
-      if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || 'validation replay failed');
-      }
-      setValidationReplay(payload.result as ValidationReplayResult);
-      setValidationReplayError(undefined);
-    } catch (error) {
-      setValidationReplay(undefined);
-      setValidationReplayError((error as Error).message);
-    } finally {
-      setIsValidationReplayLoading(false);
-    }
-  };
-
   const loadRustPositionAnalysis = async () => {
     if (legs.length === 0) {
       setRustPositionAnalysis(undefined);
@@ -482,10 +458,6 @@ export default function App() {
   // Run on first boot to load default MRVL legs
   useEffect(() => {
     handleTickerSelect('MRVL');
-  }, []);
-
-  useEffect(() => {
-    loadValidationReplay();
   }, []);
 
   useEffect(() => {
@@ -1120,17 +1092,6 @@ export default function App() {
               onVisibleStrikesChange={handleChainVisibleStrikesChange}
             />
           </div>
-
-          <ValidationReportPanel
-            activeSymbol={selectedSymbol}
-            qualitySummary={liveMarketData?.ok ? liveMarketData.qualitySummary : undefined}
-            liveChain={validationChainRows.length > 0 ? validationChainRows : liveChainRows}
-            replayResult={validationReplay}
-            replayError={validationReplayError}
-            isReplayLoading={isValidationReplayLoading}
-            rustAnalysis={rustPositionAnalysis}
-            isRustAnalysisLoading={isRustAnalysisLoading}
-          />
 
           {/* SEC 1: TOP DOCK COMBINED HORIZONTAL CONTROL GRID */}
           <div className="grid grid-cols-1 2xl:grid-cols-12 gap-4">

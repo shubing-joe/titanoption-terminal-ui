@@ -37,6 +37,13 @@ export interface OptionQuoteTicket {
   ask: number;
   mid: number;
   mark: number;
+  greeks: {
+    delta: number | null;
+    gamma: number | null;
+    theta: number | null;
+    vega: number | null;
+    iv: number | null;
+  };
   spread: number;
   spreadPct: number;
   limitLadder: {
@@ -212,6 +219,13 @@ export function buildOptionQuoteTicket(input: OptionQuoteTicketInput): OptionQuo
     ask,
     mid,
     mark,
+    greeks: {
+      delta: selected.delta == null ? null : round4(finiteNumber(selected.delta)),
+      gamma: selected.gamma == null ? null : round4(finiteNumber(selected.gamma)),
+      theta: selected.theta == null ? null : round4(finiteNumber(selected.theta)),
+      vega: selected.vega == null ? null : round4(finiteNumber(selected.vega)),
+      iv: selected.iv == null ? null : round4(finiteNumber(selected.iv)),
+    },
     spread,
     spreadPct,
     limitLadder,

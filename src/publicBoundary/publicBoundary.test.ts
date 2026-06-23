@@ -15,6 +15,9 @@ const forbiddenPublicTokens = [
   'AI CONSULTANT ADVISOR',
   '/api/playbook/',
   '/api/strategy-advisor',
+  'ValidationReportPanel',
+  'STRICT VALIDATION GATE',
+  '/api/market/validation/replay',
 ];
 
 for (const token of forbiddenPublicTokens) {
